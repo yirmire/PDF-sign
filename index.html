@@ -153,13 +153,14 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div class="p-6">
-                <div class="bg-white border-2 border-slate-200 rounded-xl overflow-hidden touch-none relative">
-                    <canvas id="signature-pad" width="600" height="300" class="w-full cursor-crosshair"></canvas>
+            <div class="p-6 text-center">
+                <div class="bg-white border-2 border-slate-200 rounded-xl overflow-hidden touch-none relative mb-2">
+                    <canvas id="signature-pad" width="600" height="300" class="w-full cursor-crosshair bg-white"></canvas>
                 </div>
-                <div class="flex gap-3 mt-6">
+                <p class="text-[10px] text-slate-400 mb-4">Use o mouse ou o dedo para desenhar sua rubrica</p>
+                <div class="flex gap-3">
                     <button id="btn-clear-canvas" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-all">Limpar</button>
-                    <button id="btn-save-canvas" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all">Salvar</button>
+                    <button id="btn-save-canvas" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all">Salvar Assinatura</button>
                 </div>
             </div>
         </div>
@@ -177,7 +178,7 @@
                 
                 <div class="space-y-3">
                     <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Chave PIX</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Chave PIX (Celular)</p>
                         <p class="text-lg font-mono font-bold text-slate-800">22992614433</p>
                     </div>
                     <button id="btn-copy-pix" onclick="copyPix()" class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors">
@@ -191,6 +192,7 @@
     </div>
 
     <script>
+        // Configuração PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
         const state = {
@@ -213,8 +215,9 @@
 
         lucide.createIcons();
 
-        // --- Render PDF ---
+        // --- Renderização do PDF ---
         async function renderPage(num) {
+            if (!state.pdfDoc) return;
             try {
                 const page = await state.pdfDoc.getPage(num);
                 const viewport = page.getViewport({ scale: state.scale });
@@ -290,13 +293,16 @@
             lucide.createIcons();
         }
 
-        // --- Eventos Ficheiro ---
+        // --- Eventos de Upload ---
         pdfInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file && file.type === 'application/pdf') {
                 state.pdfFile = file;
-                state.pdfBytes = await file.arrayBuffer();
-                const loadingTask = pdfjsLib.getDocument({ data: state.pdfBytes });
+                const buffer = await file.arrayBuffer();
+                state.pdfBytes = buffer;
+                
+                // IMPORTANTE: Passamos uma CÓPIA (.slice(0)) para o pdf.js para não desvincular o buffer original
+                const loadingTask = pdfjsLib.getDocument({ data: state.pdfBytes.slice(0) });
                 state.pdfDoc = await loadingTask.promise;
                 state.numPages = state.pdfDoc.numPages;
                 state.currentPage = 1;
@@ -311,7 +317,7 @@
         document.getElementById('btn-prev-page').onclick = () => { if(state.currentPage > 1) { state.currentPage--; renderPage(state.currentPage); } };
         document.getElementById('btn-next-page').onclick = () => { if(state.currentPage < state.numPages) { state.currentPage++; renderPage(state.currentPage); } };
 
-        // --- Assinatura Pad ---
+        // --- Painel de Assinatura (Desenho) ---
         function getSigPos(e) {
             const rect = sigCanvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -322,33 +328,56 @@
             };
         }
 
-        sigCanvas.addEventListener('mousedown', (e) => { state.isDrawing = true; sigCtx.beginPath(); const p = getSigPos(e); sigCtx.moveTo(p.x, p.y); });
-        sigCanvas.addEventListener('mousemove', (e) => { 
-            if(!state.isDrawing) return; 
-            const p = getSigPos(e); 
-            sigCtx.lineTo(p.x, p.y); 
-            sigCtx.strokeStyle = "#000"; 
-            sigCtx.lineWidth = 3; 
-            sigCtx.stroke(); 
-        });
+        function startDrawing(e) {
+            state.isDrawing = true;
+            sigCtx.beginPath();
+            const p = getSigPos(e);
+            sigCtx.moveTo(p.x, p.y);
+            e.preventDefault();
+        }
+
+        function moveDrawing(e) {
+            if (!state.isDrawing) return;
+            const p = getSigPos(e);
+            sigCtx.lineTo(p.x, p.y);
+            sigCtx.strokeStyle = "#000000";
+            sigCtx.lineWidth = 3;
+            sigCtx.lineCap = "round";
+            sigCtx.stroke();
+            e.preventDefault();
+        }
+
+        sigCanvas.addEventListener('mousedown', startDrawing);
+        sigCanvas.addEventListener('mousemove', moveDrawing);
         window.addEventListener('mouseup', () => state.isDrawing = false);
 
-        document.getElementById('btn-open-modal').onclick = () => { document.getElementById('signature-modal').classList.replace('hidden', 'flex'); sigCtx.clearRect(0,0,600,300); };
-        document.getElementById('btn-new-signature').onclick = () => { document.getElementById('signature-modal').classList.replace('hidden', 'flex'); sigCtx.clearRect(0,0,600,300); };
-        document.getElementById('btn-clear-canvas').onclick = () => sigCtx.clearRect(0,0,600,300);
+        sigCanvas.addEventListener('touchstart', startDrawing);
+        sigCanvas.addEventListener('touchmove', moveDrawing);
+        sigCanvas.addEventListener('touchend', () => state.isDrawing = false);
+
+        document.getElementById('btn-open-modal').onclick = () => { 
+            document.getElementById('signature-modal').classList.replace('hidden', 'flex'); 
+            sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); 
+        };
+        document.getElementById('btn-new-signature').onclick = () => { 
+            document.getElementById('signature-modal').classList.replace('hidden', 'flex'); 
+            sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); 
+        };
+        document.getElementById('btn-clear-canvas').onclick = () => sigCtx.clearRect(0,0,sigCanvas.width, sigCanvas.height);
+        
         document.getElementById('btn-save-canvas').onclick = () => {
+            // Captura a assinatura
             state.signatureImage = sigCanvas.toDataURL('image/png');
             closeModal('signature-modal');
             updateUI();
         };
 
-        // --- Colocar Assinatura ---
+        // --- Posicionamento no PDF ---
         document.getElementById('pdf-render-wrapper').onclick = (e) => {
             if(!state.signatureImage) return;
             const rect = document.getElementById('pdf-render-wrapper').getBoundingClientRect();
-            // Centraliza a imagem (120px de largura / 2 = 60)
-            const x = e.clientX - rect.left - 60; 
-            const y = e.clientY - rect.top - 30;
+            const x = e.clientX - rect.left - 60; // Metade da largura visual (120/2)
+            const y = e.clientY - rect.top - 30; // Metade da altura aprox
 
             state.placedSignatures.push({
                 id: Date.now(),
@@ -364,36 +393,40 @@
             updateUI();
         };
 
-        // --- Exportar PDF (FIXED) ---
+        // --- Download e Gravação (FIXED) ---
         document.getElementById('btn-download').onclick = async () => {
+            if (!state.pdfBytes) return;
+            
             const btnText = document.getElementById('btn-download-text');
             const original = btnText.textContent;
-            btnText.textContent = "Gravando...";
+            btnText.textContent = "Processando...";
             
             try {
-                // Carregar bytes originais no pdf-lib
-                const pdfLibDoc = await PDFLib.PDFDocument.load(state.pdfBytes);
+                // IMPORTANTE: SEMPRE usar .slice(0) para garantir que temos um buffer fresco
+                const pdfLibDoc = await PDFLib.PDFDocument.load(state.pdfBytes.slice(0));
                 const pages = pdfLibDoc.getPages();
 
-                // Função auxiliar para converter base64 em Uint8Array
+                // Converte Base64 para Uint8Array de forma segura
                 const base64ToUint8 = (base64) => {
-                    const raw = window.atob(base64.split(',')[1]);
-                    const array = new Uint8Array(new ArrayBuffer(raw.length));
-                    for (let i = 0; i < raw.length; i++) array[i] = raw.charCodeAt(i);
-                    return array;
+                    const parts = base64.split(',');
+                    const raw = window.atob(parts[1]);
+                    const uint8 = new Uint8Array(raw.length);
+                    for (let i = 0; i < raw.length; i++) {
+                        uint8[i] = raw.charCodeAt(i);
+                    }
+                    return uint8;
                 };
 
                 for (const sig of state.placedSignatures) {
                     const page = pages[sig.page - 1];
                     const { width, height } = page.getSize();
                     
-                    // Dimensões atuais do canvas de renderização
                     const renderW = pdfCanvas.width;
                     const renderH = pdfCanvas.height;
 
-                    // Mapeia coordenadas visuais para o PDF
+                    // Mapeamento de coordenadas (Visual -> PDF Real)
                     const pdfX = (sig.x / renderW) * width;
-                    // Y é invertido no PDF (0 é o fundo)
+                    // Y é invertido no sistema do PDF
                     const pdfY = height - ((sig.y + 60) / renderH) * height;
 
                     const sigImgBytes = base64ToUint8(sig.image);
@@ -412,22 +445,22 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `assinado_${state.pdfFile.name}`;
+                a.download = `assinado_${state.pdfFile ? state.pdfFile.name : 'documento.pdf'}`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 
-                btnText.textContent = "Pronto!";
+                btnText.textContent = "Sucesso!";
                 setTimeout(() => btnText.textContent = original, 2000);
             } catch (err) {
-                console.error("Erro Final:", err);
-                alert("Erro ao gravar. Verifique se o PDF não está protegido.");
+                console.error("Erro ao gerar PDF:", err);
+                alert("Erro ao gravar o PDF. Tente novamente.");
                 btnText.textContent = "Erro";
                 setTimeout(() => btnText.textContent = original, 3000);
             }
         };
 
-        // --- Utils ---
+        // --- Utilitários ---
         window.closeModal = (id) => document.getElementById(id).classList.replace('flex', 'hidden');
         window.toggleDonateModal = () => {
             const m = document.getElementById('donate-modal');
