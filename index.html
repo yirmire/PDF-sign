@@ -21,6 +21,7 @@
         .signature-overlay {
             cursor: move;
             z-index: 10;
+            pointer-events: none; /* Permite clicar no canvas através da assinatura se necessário */
         }
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
@@ -109,7 +110,7 @@
 
             <!-- Lista de Assinaturas -->
             <div id="signatures-list-container" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Aplicadas</h2>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4 text-slate-500">Assinaturas Aplicadas</h2>
                 <div id="signatures-list" class="space-y-2 max-h-40 overflow-y-auto pr-2"></div>
             </div>
 
@@ -150,7 +151,7 @@
                 </div>
 
                 <div id="viewport-container" class="relative bg-slate-200/50 p-4 md:p-8 rounded-2xl overflow-auto w-full flex justify-center border border-slate-200 shadow-inner min-h-[600px]">
-                    <div id="pdf-render-wrapper" class="relative inline-block shadow-2xl bg-white">
+                    <div id="pdf-render-wrapper" class="relative inline-block shadow-2xl bg-white cursor-crosshair">
                         <canvas id="pdf-canvas"></canvas>
                         <!-- Assinaturas flutuantes entram aqui -->
                     </div>
@@ -198,7 +199,7 @@
                     <button onclick="window.open('https://www.paypal.com', '_blank')" class="w-full py-4 bg-[#0070ba] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
                         Doar via PayPal
                     </button>
-                    <button onclick="copyPix()" class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                    <button id="btn-copy-pix" onclick="copyPix()" class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
                         <i data-lucide="copy" class="w-4 h-4"></i> Copiar Chave PIX
                     </button>
                 </div>
@@ -293,6 +294,8 @@
                     item.innerHTML = `<span>Assinatura ${i+1} (Pág ${sig.page})</span> <button onclick="removeSig(${sig.id})" class="text-rose-400 hover:text-rose-600"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`;
                     list.appendChild(item);
                 });
+            } else {
+                document.getElementById('signatures-list-container').classList.add('hidden');
             }
 
             currentSigs.forEach(sig => {
@@ -360,7 +363,7 @@
         document.getElementById('btn-new-signature').onclick = () => { document.getElementById('signature-modal').classList.replace('hidden', 'flex'); sigCtx.clearRect(0,0,800,400); };
         document.getElementById('btn-clear-canvas').onclick = () => sigCtx.clearRect(0,0,800,400);
         document.getElementById('btn-save-canvas').onclick = () => {
-            state.signatureImage = sigCanvas.toDataURL();
+            state.signatureImage = sigCanvas.toDataURL('image/png');
             closeModal('signature-modal');
             updateUI();
         };
@@ -369,8 +372,8 @@
         document.getElementById('pdf-render-wrapper').addEventListener('click', (e) => {
             if(!state.signatureImage) return;
             const rect = document.getElementById('pdf-render-wrapper').getBoundingClientRect();
-            const x = e.clientX - rect.left - 60; // centraliza
-            const y = e.clientY - rect.top - 30;
+            const x = e.clientX - rect.left - 60; // centraliza visualmente (metade da largura de 120px)
+            const y = e.clientY - rect.top - 30; // centraliza visualmente (metade da altura aprox)
 
             state.placedSignatures.push({
                 id: Date.now(),
@@ -386,12 +389,14 @@
             updateUI();
         };
 
-        // --- Exportação ---
+        // --- Exportação (Correção de Erro de Gravação) ---
         document.getElementById('btn-download').onclick = async () => {
             const btnText = document.getElementById('btn-download-text');
+            const originalText = btnText.textContent;
             btnText.textContent = "Gravando...";
             
             try {
+                // Carrega o documento usando pdf-lib
                 const pdfLibDoc = await PDFLib.PDFDocument.load(state.pdfBytes);
                 const pages = pdfLibDoc.getPages();
 
@@ -402,11 +407,16 @@
                     const renderW = pdfCanvas.width;
                     const renderH = pdfCanvas.height;
 
-                    // Converte coordenadas da tela para o PDF (Invertendo Y)
+                    // Converte coordenadas da tela para o sistema do PDF
                     const pdfX = (sig.x / renderW) * width;
+                    // O PDF conta o Y de baixo para cima. 
+                    // sig.y é de cima para baixo. sig.y + altura_assinatura_em_render
                     const pdfY = height - ((sig.y + 60) / renderH) * height;
 
-                    const sigImg = await pdfLibDoc.embedPng(sig.image);
+                    // CORREÇÃO: Converter DataURL para ArrayBuffer antes de embed
+                    const sigImageBytes = await fetch(sig.image).then(res => res.arrayBuffer());
+                    const sigImg = await pdfLibDoc.embedPng(sigImageBytes);
+                    
                     page.drawImage(sigImg, {
                         x: pdfX,
                         y: pdfY,
@@ -421,13 +431,17 @@
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `assinado_${state.pdfFile.name}`;
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
+                
                 btnText.textContent = "Sucesso!";
-                setTimeout(() => btnText.textContent = "Finalizar", 2000);
+                setTimeout(() => btnText.textContent = originalText, 2000);
             } catch (err) {
-                console.error(err);
-                alert("Erro ao gravar assinaturas.");
+                console.error("Erro ao gerar PDF:", err);
+                alert("Ocorreu um erro ao gravar as assinaturas no ficheiro. Verifique a consola para mais detalhes.");
                 btnText.textContent = "Erro";
+                setTimeout(() => btnText.textContent = originalText, 3000);
             }
         };
 
@@ -439,13 +453,24 @@
         };
         window.copyPix = () => {
             const chave = "suachavepixaqui@email.com";
+            const btn = document.getElementById('btn-copy-pix');
+            
+            // Método robusto para cópia
             const el = document.createElement('textarea');
             el.value = chave;
             document.body.appendChild(el);
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            alert("Chave PIX copiada! Obrigado pelo apoio.");
+            
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Copiado!';
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                lucide.createIcons();
+            }, 2000);
         };
     </script>
 </body>
