@@ -6,21 +6,4 @@ O site publicado continha as bibliotecas na pasta principal, mas o HTML e o apli
 CORREÇÃO
 Esta versão usa uma estrutura plana: todos os arquivos ficam juntos na pasta principal. Não é necessário criar vendor/ nem icons/. Os recursos da versão 2.1 foram preservados. Arquivos de interface e bibliotecas recebem identificadores de versão nas URLs para evitar misturar cópias antigas do cache. O armazenamento de rascunhos e modelos mantém os mesmos nomes e não é apagado pela atualização.
 
-COMO PUBLICAR
-1. Extraia o ZIP. Não envie o próprio ZIP ao GitHub.
-2. Abra https://github.com/yirmire/PDF-sign e entre na sua conta.
-3. Na pasta principal do projeto (onde está index.html), escolha Add file > Upload files.
-4. Envie TODOS os arquivos extraídos, juntos, incluindo os três arquivos pdf*.js, os dois icon*.png, index.html, app.js, styles.css, sw.js e manifest.webmanifest. Não crie uma pasta adicional.
-5. Confirme a substituição com Commit changes. Não é necessário deletar antes os arquivos atuais.
-6. Aguarde o GitHub Pages concluir a publicação, então abra:
-   https://yirmire.github.io/PDF-sign/?v=2.1.1
-7. Confira a indicação v2.1.1 no painel Seu fluxo de trabalho.
-8. Se aparecer Atualizar, guarde qualquer trabalho aberto antes de clicar. Caso a versão antiga continue aparecendo, feche as abas do PDF SIGN e abra novamente o link acima. Uma janela anônima pode ser usada para conferir a publicação sem apagar os dados do navegador.
-
-Não apague os dados do site para tentar atualizar: isso pode apagar rascunhos e modelos locais. O link de versão acima evita reutilizar a página antiga em cache.
-
-TESTES REALIZADOS
-Em Chromium automatizado: carregamento sem erro de biblioteca; assinatura digitada; repetição em várias páginas; desfazer/refazer; bloqueio de posição; modelos; reorganização e rotação de páginas; recuperação de rascunho após recarregar; prévia e download de PDF; layout de celular; recuperação e exportação offline após o primeiro carregamento completo.
-A publicação no GitHub não foi feita automaticamente. A verificação local não substitui testar o site depois de publicar.
-
 Os documentos continuam sendo processados no navegador. As assinaturas são visuais, sem certificado digital. Reorganizar páginas cria um PDF novo e pode não preservar a interatividade de campos e marcadores; mantenha o original.
