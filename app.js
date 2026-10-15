@@ -61,7 +61,7 @@
       return;
     }
 
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = './vendor/pdf.worker.min.js';
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.min.js?v=2.1.1';
 
     configureSignatureCanvas();
     bindEvents();
@@ -1945,7 +1945,7 @@
   function isDirty(){return Boolean(state.pdfDoc && pro.baseline !== null && serializeElements()!==pro.baseline)}
   function safeAction(fn){return async (...args)=>{try{await fn(...args)}catch(e){console.error(e);showToast(e.message || 'Não foi possível concluir. Suas alterações continuam aqui.','error',7000)}}}
   function initPro(){
-    refs.toolsPanel.insertAdjacentHTML('afterend',`<section class="panel pro-panel"><div class="panel-heading"><h2>Seu fluxo de trabalho</h2><span class="pro-version">v2.1.0</span></div>
+    refs.toolsPanel.insertAdjacentHTML('afterend',`<section class="panel pro-panel"><div class="panel-heading"><h2>Seu fluxo de trabalho</h2><span class="pro-version">v2.1.1</span></div>
       <div class="pro-actions"><button id="pro-preview" class="button primary">Visualizar resultado</button><button id="pro-pages" class="button ghost">Organizar páginas</button><button id="pro-templates" class="button ghost">Modelos de preenchimento</button><button id="pro-pan" class="button ghost" aria-pressed="false">Modo: editar elementos</button></div>
       <label class="checkbox-row"><input type="checkbox" id="draft-enabled" checked><span>Salvar rascunho neste dispositivo</span></label><p class="pro-note">Inclui o PDF e suas assinaturas. Evite ativar em computadores compartilhados.</p><p id="draft-status" class="pro-note" role="status">Salvamento local ativado</p><div class="pro-actions"><button id="draft-restore" class="button secondary hidden">Recuperar rascunho</button><button id="draft-delete" class="button ghost small">Apagar rascunho salvo</button></div>
       <div id="update-banner" class="pro-banner hidden">Há uma atualização disponível. <button id="apply-update" class="button small secondary">Atualizar</button></div></section>`);
