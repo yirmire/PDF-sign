@@ -2,17 +2,6 @@
 
 A identidade do PDF Signer Pro foi preservada: marca, cores, tipografia, ícones, controles e processamento local. Este pacote é uma atualização do site publicado em https://yirmire.github.io/PDF-sign/.
 
-## Colocar no ar
-
-1. Extraia o ZIP em seu computador.
-2. Abra https://github.com/yirmire/PDF-sign e entre na sua conta.
-3. Faça uma cópia da versão atual antes de substituí-la (Code → Download ZIP).
-4. Na pasta usada pelo GitHub Pages, use **Add file → Upload files**. Envie o conteúdo extraído, incluindo as pastas `vendor` e `icons`. O `index.html` deve ficar no mesmo nível do arquivo atual, não dentro de uma pasta extra.
-5. Confirme a substituição dos arquivos e faça o commit com a mensagem “Atualiza PDF SIGN para 2.1.0”.
-6. Aguarde a publicação do GitHub Pages. Abra o site novamente e confira o indicador **v2.1.0** no painel “Seu fluxo de trabalho”. Se aparecer “Atualizar”, primeiro baixe ou salve o trabalho aberto, depois clique.
-7. Na primeira migração da versão antiga, feche todas as abas do site e abra novamente. Se ainda aparecer a versão antiga, teste em uma janela anônima; não apague os dados do navegador sem guardar seus rascunhos.
-
-Não é necessário um servidor novo, conta paga ou etapa de compilação. A configuração existente do GitHub Pages deve ser mantida. A publicação não foi realizada automaticamente por este pacote.
 
 ## Recursos novos
 
@@ -45,9 +34,3 @@ Reorganizar páginas cria um PDF novo. Marcadores, metadados e campos interativo
 - `vendor/`: pdf-lib 1.17.1 e PDF.js 3.4.120, nas versões já usadas pelo site.
 - `licenses/`: licenças dos componentes distribuídos.
 - `tests/e2e.cjs`: teste de regressão usando um PDF sintético, sem dados pessoais.
-
-## Teste local opcional
-
-Para abrir manualmente: `python -m http.server 8000` nesta pasta e acessar http://localhost:8000. Abrir o HTML por duplo clique não oferece o ambiente completo de workers, cache e armazenamento.
-
-Para o teste automatizado: instale Node.js, execute `npm install --no-save playwright`, depois `npx playwright install chromium` e `node tests/e2e.cjs`. O teste inicia seu próprio servidor local. Opcionalmente, a variável `CHROMIUM_PATH` pode apontar para um Chromium já instalado.
