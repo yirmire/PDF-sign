@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2563eb">
   <meta name="description" content="Adicione assinaturas visuais, textos, datas e marcações em PDFs diretamente no navegador.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>PDF Signer Pro — Editor local de PDF</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="stylesheet" href="./styles.css">
-  <script defer src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script defer src="./vendor/pdf-lib.min.js"></script>
+  <script defer src="./vendor/pdf.min.js"></script>
   <script defer src="./app.js"></script>
 </head>
 <body>
@@ -358,6 +358,15 @@
       <button class="button ghost full" type="button" data-close-modal="donate-modal">Fechar</button>
     </div>
   </div>
+
+  <div id="batch-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="batch-title" tabindex="-1">
+    <div class="modal-card pro-wide"><div class="modal-header"><div><span class="eyebrow">Menos repetição</span><h2 id="batch-title">Aplicar em várias páginas</h2></div><button class="icon-button" data-close-modal="batch-modal" aria-label="Fechar">×</button></div>
+    <div class="modal-body"><p class="modal-copy">Posicione um elemento no documento e escolha onde repeti-lo. A prévia mostra as novas cópias; as edições existentes são mantidas.</p><label class="field"><span>Páginas do original</span><input id="batch-range" placeholder="Ex.: 2-5, 8 ou todas" value="todas"></label><p id="batch-summary" role="status"></p><button id="batch-preview" class="button secondary">Conferir páginas</button><div id="batch-previews" class="pro-preview-grid"></div></div>
+    <div class="modal-footer"><button class="button ghost" data-close-modal="batch-modal">Cancelar</button><button id="batch-apply" class="button primary" disabled>Aplicar cópias</button></div></div>
+  </div>
+  <div id="pages-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pages-title" tabindex="-1"><div class="modal-card pro-wide"><div class="modal-header"><div><span class="eyebrow">Documento final</span><h2 id="pages-title">Organizar páginas</h2></div><button class="icon-button" data-close-modal="pages-modal" aria-label="Fechar">×</button></div><div class="modal-body"><p class="modal-copy">Defina a ordem, rotação e as páginas que deseja baixar. No editor, os números continuam sendo os do original. Confira o resultado em “Visualizar resultado”. Campos de formulário e marcadores podem perder interatividade ao reorganizar; guarde o original.</p><label class="field"><span>Incluir somente (números do original)</span><input id="pages-range" placeholder="Ex.: 2-7 ou todas" value="todas"></label><button id="pages-filter" class="button secondary">Aplicar seleção</button><div id="pages-list" class="pro-page-list"></div></div><div class="modal-footer"><button class="button ghost" data-close-modal="pages-modal">Cancelar</button><button id="pages-apply" class="button primary">Salvar organização</button></div></div></div>
+  <div id="preview-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title" tabindex="-1"><div class="modal-card pro-wide"><div class="modal-header"><div><span class="eyebrow">Arquivo conferido</span><h2 id="preview-title">Visualizar resultado</h2></div><button class="icon-button" data-close-modal="preview-modal" aria-label="Fechar">×</button></div><div class="modal-body"><p class="modal-copy">Todas as páginas passaram na verificação de abertura e renderização. Confira os dados e a posição das assinaturas.</p><label class="field"><span>Página do arquivo final</span><select id="preview-page"></select></label><div class="pro-result"><canvas id="preview-canvas"></canvas></div></div><div class="modal-footer"><button class="button ghost" data-close-modal="preview-modal">Voltar ao editor</button><button id="preview-download" class="button primary">Baixar PDF conferido</button></div></div></div>
+  <div id="templates-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="templates-title" tabindex="-1"><div class="modal-card"><div class="modal-header"><div><span class="eyebrow">Neste dispositivo</span><h2 id="templates-title">Modelos de preenchimento</h2></div><button class="icon-button" data-close-modal="templates-modal" aria-label="Fechar">×</button></div><div class="modal-body"><p class="modal-copy">Salve os elementos da página atual. Um modelo guarda textos e imagens de assinatura neste navegador; não guarda o PDF. Use em documentos com o mesmo layout.</p><label class="field"><span>Nome do modelo</span><input id="template-name" maxlength="60" placeholder="Ex.: Recibo mensal"></label><button id="template-save" class="button secondary">Salvar página como modelo</button><div id="templates-list" class="pro-page-list"></div><div id="template-preview" class="pro-preview-grid"></div><p id="template-warning" role="status"></p></div><div class="modal-footer"><button class="button ghost" data-close-modal="templates-modal">Fechar</button><button id="template-apply" class="button primary" disabled>Aplicar na página atual</button></div></div></div>
 
   <noscript>Ative o JavaScript para usar o editor de PDF.</noscript>
 </body>
